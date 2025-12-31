@@ -1,12 +1,59 @@
-module "security_group" {
-  source  = "terraform-aws-modules/security-group/aws"
-  version = "5.3.1"
+resource "aws_security_group" "devops_public_sg" {
+  name        = "devops-public-sg"
+  description = "Public security group: HTTP from anywhere, SSH from VPC only"
+  vpc_id      = aws_vpc.devops.id
 
-  name        = "web-server"
-  description = "Security group for web-server with HTTP ports open"
-  vpc_id      = module.vpc.vpc_id
+  ingress {
+    description = "HTTP from anywhere"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 
-  ingress_cidr_blocks = ["0.0.0.0/0"]
-  ingress_rules       = ["http-80-tcp", "ssh-tcp"]
-  egress_rules        = ["all-all"]
+  ingress {
+    description = "SSH from inside VPC"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = [aws_vpc.devops.cidr_block]
+  }
+
+  egress {
+    description = "Allow all outbound"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "devops-public-sg"
+  }
+}
+
+resource "aws_security_group" "devops_private_sg" {
+  name        = "devops-private-sg"
+  description = "Private security group: SSH from VPC only"
+  vpc_id      = aws_vpc.devops.id
+
+  ingress {
+    description = "SSH from inside VPC"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = [aws_vpc.devops.cidr_block]
+  }
+
+  egress {
+    description = "Allow all outbound"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "devops-private-sg"
+  }
 }
